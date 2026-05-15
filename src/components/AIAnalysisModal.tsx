@@ -102,7 +102,7 @@ export function AIAnalysisModal({ imageUrl, isOpen, onClose, autoAnalyze = false
               
               <textarea
                 className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none resize-none"
-                placeholder="例: EMTEKのドアノブ、未使用品です。相場と説明文を教えて。"
+                placeholder=""
                 rows={3}
                 value={contextInput}
                 onChange={(e) => setContextInput(e.target.value)}

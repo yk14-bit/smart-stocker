@@ -10,7 +10,7 @@ import { AuthForm } from './components/AuthForm';
 import { supabase } from './services/supabase';
 
 function MainApp({ session }: { session: any }) {
-  const { items, categories, addItem, updateItem, loading } = useInventory(session.user.id);
+  const { items, categories, addItem, updateItem, deleteItem, loading } = useInventory(session.user.id);
   const { settings, updateSettings } = useSettings(session.user.id);
   const [activeTab, setActiveTab] = useState<'list' | 'add' | 'settings'>('list');
 
@@ -86,6 +86,7 @@ function MainApp({ session }: { session: any }) {
                 items={items} 
                 categories={categories} 
                 onUpdateItem={updateItem} 
+                onDeleteItem={deleteItem}
                 userId={session.user.id}
               />
             )}

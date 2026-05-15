@@ -8,10 +8,11 @@ interface Props {
   items: InventoryItem[];
   categories: Category[];
   onUpdateItem: (id: string, updates: Partial<InventoryItem>) => void;
+  onDeleteItem: (id: string) => void;
   userId: string;
 }
 
-export function InventoryList({ items, categories, onUpdateItem, userId }: Props) {
+export function InventoryList({ items, categories, onUpdateItem, onDeleteItem, userId }: Props) {
   const [filter, setFilter] = useState<string>('all');
   const [search, setSearch] = useState<string>('');
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
@@ -128,6 +129,7 @@ export function InventoryList({ items, categories, onUpdateItem, userId }: Props
           isOpen={true}
           onClose={() => setEditingItem(null)}
           onSave={onUpdateItem}
+          onDelete={onDeleteItem}
         />
       )}
     </div>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Save, Camera } from 'lucide-react';
+import { X, Save, Camera, Trash2 } from 'lucide-react';
 import type { InventoryItem, Category } from '../types';
 
 interface Props {
@@ -8,9 +8,10 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   onSave: (id: string, updates: Partial<InventoryItem>) => void;
+  onDelete: (id: string) => void;
 }
 
-export function EditItemModal({ item, categories, isOpen, onClose, onSave }: Props) {
+export function EditItemModal({ item, categories, isOpen, onClose, onSave, onDelete }: Props) {
   const [name, setName] = useState(item.name);
   const [categoryId, setCategoryId] = useState(item.categoryId);
   const [estimatedPrice, setEstimatedPrice] = useState(item.estimatedPrice?.toString() || '');
@@ -42,9 +43,16 @@ export function EditItemModal({ item, categories, isOpen, onClose, onSave }: Pro
     onClose();
   };
 
+  const handleDelete = () => {
+    if (window.confirm('本当にこのアイテムを削除しますか？')) {
+      onDelete(item.id);
+      onClose();
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-white dark:bg-gray-800 w-full max-w-md rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 flex flex-col">
+      <div className="bg-white dark:bg-gray-800 w-full max-w-md rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 flex flex-col max-h-[90vh] overflow-y-auto">
         
         <div className="flex justify-between items-center p-4 border-b border-gray-100 dark:border-gray-700">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">アイテムの編集</h2>
@@ -129,10 +137,18 @@ export function EditItemModal({ item, categories, isOpen, onClose, onSave }: Pro
             </div>
           </div>
 
-          <div className="pt-4">
+          <div className="pt-4 flex space-x-3">
+            <button
+              type="button"
+              onClick={handleDelete}
+              className="px-4 py-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-medium rounded-xl hover:bg-red-100 dark:hover:bg-red-900/40 active:bg-red-200 transition-colors flex items-center justify-center flex-shrink-0"
+              title="このアイテムを削除"
+            >
+              <Trash2 className="w-5 h-5" />
+            </button>
             <button
               type="submit"
-              className="w-full bg-primary-600 text-white font-medium py-3 px-4 rounded-xl hover:bg-primary-700 active:bg-primary-800 transition-colors flex items-center justify-center space-x-2 shadow-sm"
+              className="flex-1 bg-primary-600 text-white font-medium py-3 px-4 rounded-xl hover:bg-primary-700 active:bg-primary-800 transition-colors flex items-center justify-center space-x-2 shadow-sm"
             >
               <Save className="w-5 h-5" />
               <span>保存する</span>
