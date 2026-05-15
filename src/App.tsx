@@ -7,7 +7,7 @@ import { AddItemForm } from './components/AddItemForm';
 import { SettingsPanel } from './components/SettingsPanel';
 
 function App() {
-  const { items, categories, addItem, updateItem } = useInventory();
+  const { items, categories, addItem, updateItem, loading } = useInventory();
   const { settings, updateSettings } = useSettings();
   const [activeTab, setActiveTab] = useState<'list' | 'add' | 'settings'>('list');
 
@@ -71,24 +71,33 @@ function App() {
 
       {/* Main Content */}
       <main className="max-w-5xl mx-auto px-4 py-6">
-        {activeTab === 'list' && (
-          <InventoryList items={items} categories={categories} onUpdateItem={updateItem} />
-        )}
-        {activeTab === 'add' && (
-          <AddItemForm 
-            categories={categories} 
-            onAdd={handleAddItem}
-            onCancel={() => setActiveTab('list')}
-          />
-        )}
-        {activeTab === 'settings' && (
-          <div className="max-w-lg mx-auto">
-            <SettingsPanel 
-              settings={settings}
-              onUpdate={updateSettings}
-              onClose={() => setActiveTab('list')}
-            />
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20 space-y-4">
+            <div className="w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-gray-500 dark:text-gray-400 font-medium">データを読み込み中...</p>
           </div>
+        ) : (
+          <>
+            {activeTab === 'list' && (
+              <InventoryList items={items} categories={categories} onUpdateItem={updateItem} />
+            )}
+            {activeTab === 'add' && (
+              <AddItemForm 
+                categories={categories} 
+                onAdd={handleAddItem}
+                onCancel={() => setActiveTab('list')}
+              />
+            )}
+            {activeTab === 'settings' && (
+              <div className="max-w-lg mx-auto">
+                <SettingsPanel 
+                  settings={settings}
+                  onUpdate={updateSettings}
+                  onClose={() => setActiveTab('list')}
+                />
+              </div>
+            )}
+          </>
         )}
       </main>
     </div>
