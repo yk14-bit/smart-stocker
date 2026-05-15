@@ -26,7 +26,8 @@ export function AIAnalysisModal({ imageUrl, isOpen, onClose, autoAnalyze = false
     if (onMessagesChange) {
       onMessagesChange(messages);
     }
-  }, [messages, onMessagesChange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages]);
 
   const runAnalysis = async (customPrompt?: string, initialContext?: string) => {
     if (!settings.geminiApiKey) {

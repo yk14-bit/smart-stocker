@@ -1,4 +1,4 @@
-export type ItemStatus = '在庫あり' | '出品中' | '販売済';
+export type ItemStatus = '在庫あり' | '在庫なし' | '出品中' | '販売済';
 
 export interface Category {
   id: string;

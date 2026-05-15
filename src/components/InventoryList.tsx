@@ -14,15 +14,29 @@ interface Props {
 
 export function InventoryList({ items, categories, onUpdateItem, onDeleteItem, userId }: Props) {
   const [filter, setFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [search, setSearch] = useState<string>('');
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
 
-  const filteredItems = items.filter(item => {
-    const matchesCategory = filter === 'all' || item.categoryId === filter;
-    const matchesSearch = item.name.toLowerCase().includes(search.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
+  const filteredItems = items
+    .filter(item => {
+      const matchesCategory = filter === 'all' || item.categoryId === filter;
+      const matchesStatus = 
+        statusFilter === 'all' ? true :
+        statusFilter === 'in_stock' ? (item.quantity ?? 1) > 0 :
+        (item.quantity ?? 1) === 0;
+      const matchesSearch = item.name.toLowerCase().includes(search.toLowerCase());
+      return matchesCategory && matchesStatus && matchesSearch;
+    })
+    .sort((a, b) => {
+      // Sort out of stock items to the bottom
+      const aInStock = (a.quantity ?? 1) > 0;
+      const bInStock = (b.quantity ?? 1) > 0;
+      if (aInStock && !bInStock) return -1;
+      if (!aInStock && bInStock) return 1;
+      return 0; // Maintain original order (which is by created_at descending from useInventory)
+    });
 
   return (
     <div className="space-y-6">
@@ -37,16 +51,27 @@ export function InventoryList({ items, categories, onUpdateItem, onDeleteItem, u
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <select
-          className="px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-        >
-          <option value="all">すべてのカテゴリ</option>
-          {categories.map(cat => (
-            <option key={cat.id} value={cat.id}>{cat.name}</option>
-          ))}
-        </select>
+        <div className="flex space-x-2">
+          <select
+            className="flex-1 sm:flex-none px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+          >
+            <option value="all">すべてのカテゴリ</option>
+            {categories.map(cat => (
+              <option key={cat.id} value={cat.id}>{cat.name}</option>
+            ))}
+          </select>
+          <select
+            className="flex-1 sm:flex-none px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <option value="all">すべての在庫状態</option>
+            <option value="in_stock">在庫あり</option>
+            <option value="out_of_stock">在庫なし</option>
+          </select>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -56,8 +81,10 @@ export function InventoryList({ items, categories, onUpdateItem, onDeleteItem, u
             <p>アイテムが見つかりません</p>
           </div>
         ) : (
-          filteredItems.map(item => (
-            <div key={item.id} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm hover:shadow-md transition-shadow group flex flex-col relative">
+          filteredItems.map(item => {
+            const isOutOfStock = (item.quantity ?? 1) === 0;
+            return (
+            <div key={item.id} className={`bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm hover:shadow-md transition-all group flex flex-col relative ${isOutOfStock ? 'opacity-60 grayscale-[0.5]' : ''}`}>
               <div 
                 className="aspect-square bg-gray-50 dark:bg-gray-900 relative flex items-center justify-center cursor-pointer group-hover:opacity-90 transition-opacity"
                 onClick={() => item.imageUrl && setSelectedItem(item)}
@@ -72,7 +99,7 @@ export function InventoryList({ items, categories, onUpdateItem, onDeleteItem, u
                 ) : (
                   <ImageIcon className="w-8 h-8 text-gray-300 dark:text-gray-600" />
                 )}
-                <div className="absolute top-2 right-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm px-2 py-1 rounded-lg text-xs font-medium shadow-sm text-gray-900 dark:text-gray-100">
+                <div className={`absolute top-2 right-2 backdrop-blur-sm px-2 py-1 rounded-lg text-xs font-medium shadow-sm ${isOutOfStock ? 'bg-red-500/90 text-white' : 'bg-white/90 dark:bg-gray-800/90 text-gray-900 dark:text-gray-100'}`}>
                   {item.status}
                 </div>
               </div>
@@ -85,8 +112,8 @@ export function InventoryList({ items, categories, onUpdateItem, onDeleteItem, u
                       {categories.find(c => c.id === item.categoryId)?.name}
                     </span>
                   </div>
-                  <span className="ml-2 flex-shrink-0 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-md font-medium text-gray-600 dark:text-gray-300">
-                    {item.quantity || 1}個
+                  <span className={`ml-2 flex-shrink-0 px-2 py-0.5 rounded-md font-medium ${isOutOfStock ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'}`}>
+                    {item.quantity ?? 1}個
                   </span>
                 </div>
                 {item.estimatedPrice && (
@@ -105,7 +132,8 @@ export function InventoryList({ items, categories, onUpdateItem, onDeleteItem, u
                 <Edit2 className="w-4 h-4" />
               </button>
             </div>
-          ))
+            );
+          })
         )}
       </div>
 

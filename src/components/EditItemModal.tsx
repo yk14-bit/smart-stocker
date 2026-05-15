@@ -33,11 +33,13 @@ export function EditItemModal({ item, categories, isOpen, onClose, onSave, onDel
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const parsedQuantity = Number(quantity);
     onSave(item.id, {
       name,
       categoryId,
       imageUrl,
-      quantity: parseInt(quantity, 10) || 1,
+      status: parsedQuantity === 0 ? '在庫なし' : '在庫あり',
+      quantity: parsedQuantity,
       estimatedPrice: estimatedPrice ? parseInt(estimatedPrice, 10) : undefined,
     });
     onClose();
@@ -119,7 +121,7 @@ export function EditItemModal({ item, categories, isOpen, onClose, onSave, onDel
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">在庫数</label>
               <input
                 type="number"
-                min="1"
+                min="0"
                 value={quantity}
                 onChange={(e) => setQuantity(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"

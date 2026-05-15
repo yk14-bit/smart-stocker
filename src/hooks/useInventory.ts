@@ -14,7 +14,7 @@ function mapToSupabaseItem(item: InventoryItem) {
     estimated_price: item.estimatedPrice,
     actual_price: item.actualPrice,
     description: item.description,
-    quantity: item.quantity || 1,
+    quantity: item.quantity ?? 1,
     ai_analysis: item.aiAnalysis || [],
     created_at: item.createdAt,
   };

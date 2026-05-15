@@ -13,9 +13,12 @@ interface Props {
 export function SettingsPanel({ settings, onUpdate, onClose, session }: Props) {
   const [apiKey, setApiKey] = useState(settings.geminiApiKey);
   const [modelName, setModelName] = useState(settings.geminiModel || 'gemini-2.5-flash');
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleSave = () => {
-    onUpdate({ geminiApiKey: apiKey, geminiModel: modelName });
+  const handleSave = async () => {
+    setIsSaving(true);
+    await onUpdate({ geminiApiKey: apiKey, geminiModel: modelName });
+    setIsSaving(false);
     onClose();
   };
 
@@ -115,10 +118,11 @@ export function SettingsPanel({ settings, onUpdate, onClose, session }: Props) {
       <div className="pt-4">
         <button
           onClick={handleSave}
-          className="w-full bg-primary-600 text-white font-medium py-3 px-4 rounded-xl hover:bg-primary-700 active:bg-primary-800 transition-colors flex items-center justify-center space-x-2 shadow-sm"
+          disabled={isSaving}
+          className="w-full bg-primary-600 text-white font-medium py-3 px-4 rounded-xl hover:bg-primary-700 active:bg-primary-800 disabled:opacity-70 transition-colors flex items-center justify-center space-x-2 shadow-sm"
         >
-          <Save className="w-5 h-5" />
-          <span>設定を保存</span>
+          <Save className={`w-5 h-5 ${isSaving ? 'animate-pulse' : ''}`} />
+          <span>{isSaving ? '保存中...' : '設定を保存'}</span>
         </button>
       </div>
     </div>
