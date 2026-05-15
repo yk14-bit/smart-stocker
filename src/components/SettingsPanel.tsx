@@ -1,14 +1,16 @@
-import { Moon, Sun, Key, Save, X } from 'lucide-react';
+import { Moon, Sun, Key, Save, X, LogOut, User } from 'lucide-react';
 import type { Settings } from '../hooks/useSettings';
 import { useState } from 'react';
+import { supabase } from '../services/supabase';
 
 interface Props {
   settings: Settings;
   onUpdate: (updates: Partial<Settings>) => void;
   onClose: () => void;
+  session: any;
 }
 
-export function SettingsPanel({ settings, onUpdate, onClose }: Props) {
+export function SettingsPanel({ settings, onUpdate, onClose, session }: Props) {
   const [apiKey, setApiKey] = useState(settings.geminiApiKey);
   const [modelName, setModelName] = useState(settings.geminiModel || 'gemini-2.5-flash');
 
@@ -17,12 +19,34 @@ export function SettingsPanel({ settings, onUpdate, onClose }: Props) {
     onClose();
   };
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
+
   return (
     <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 space-y-6">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white">設定</h2>
         <button type="button" onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-full hover:bg-gray-50 dark:hover:bg-gray-700">
           <X className="w-5 h-5" />
+        </button>
+      </div>
+
+      {/* Account Info */}
+      <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-xl">
+        <div className="flex items-center space-x-3">
+          <User className="w-5 h-5 text-gray-400" />
+          <div>
+            <p className="font-medium text-gray-900 dark:text-white">アカウント</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{session?.user?.email}</p>
+          </div>
+        </div>
+        <button
+          onClick={handleLogout}
+          className="flex items-center space-x-1 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 px-3 py-1.5 rounded-lg transition-colors"
+        >
+          <LogOut className="w-4 h-4" />
+          <span>ログアウト</span>
         </button>
       </div>
 

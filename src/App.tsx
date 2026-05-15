@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Package, PlusCircle, Settings, List } from 'lucide-react';
 import { useInventory } from './hooks/useInventory';
 import { useSettings } from './hooks/useSettings';
@@ -6,7 +6,10 @@ import { InventoryList } from './components/InventoryList';
 import { AddItemForm } from './components/AddItemForm';
 import { SettingsPanel } from './components/SettingsPanel';
 
-function App() {
+import { AuthForm } from './components/AuthForm';
+import { supabase } from './services/supabase';
+
+function MainApp({ session }: { session: any }) {
   const { items, categories, addItem, updateItem, loading } = useInventory();
   const { settings, updateSettings } = useSettings();
   const [activeTab, setActiveTab] = useState<'list' | 'add' | 'settings'>('list');
@@ -94,6 +97,7 @@ function App() {
                   settings={settings}
                   onUpdate={updateSettings}
                   onClose={() => setActiveTab('list')}
+                  session={session}
                 />
               </div>
             )}
@@ -102,6 +106,40 @@ function App() {
       </main>
     </div>
   );
+}
+
+function App() {
+  const [session, setSession] = useState<any>(null);
+  const [initializing, setInitializing] = useState(true);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setInitializing(false);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  if (initializing) {
+    return (
+      <div className="min-h-screen bg-surface-light dark:bg-surface-dark flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return <AuthForm />;
+  }
+
+  return <MainApp session={session} />;
 }
 
 export default App;
