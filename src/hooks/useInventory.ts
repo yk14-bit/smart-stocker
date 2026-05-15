@@ -36,7 +36,7 @@ function mapFromSupabaseItem(row: any): InventoryItem {
   };
 }
 
-export function useInventory() {
+export function useInventory(userId: string) {
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,12 +50,18 @@ export function useInventory() {
 
         let activeCategories = catData || [];
 
-        // If categories are empty (first run), insert defaults
+        // If categories are empty (first run), insert defaults with unique IDs
         if (activeCategories.length === 0) {
+          const uniqueDefaults = DEFAULT_CATEGORIES.map((cat) => ({
+            id: `${userId}-${cat.id}`,
+            name: cat.name,
+          }));
+
           const { data: newCats, error: insertCatError } = await supabase
             .from('categories')
-            .insert(DEFAULT_CATEGORIES)
+            .insert(uniqueDefaults)
             .select();
+            
           if (insertCatError) throw insertCatError;
           activeCategories = newCats || [];
         }

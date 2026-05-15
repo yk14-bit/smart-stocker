@@ -10,8 +10,8 @@ import { AuthForm } from './components/AuthForm';
 import { supabase } from './services/supabase';
 
 function MainApp({ session }: { session: any }) {
-  const { items, categories, addItem, updateItem, loading } = useInventory();
-  const { settings, updateSettings } = useSettings();
+  const { items, categories, addItem, updateItem, loading } = useInventory(session.user.id);
+  const { settings, updateSettings } = useSettings(session.user.id);
   const [activeTab, setActiveTab] = useState<'list' | 'add' | 'settings'>('list');
 
   const handleAddItem = (item: any) => {
@@ -82,13 +82,19 @@ function MainApp({ session }: { session: any }) {
         ) : (
           <>
             {activeTab === 'list' && (
-              <InventoryList items={items} categories={categories} onUpdateItem={updateItem} />
+              <InventoryList 
+                items={items} 
+                categories={categories} 
+                onUpdateItem={updateItem} 
+                userId={session.user.id}
+              />
             )}
             {activeTab === 'add' && (
               <AddItemForm 
                 categories={categories} 
                 onAdd={handleAddItem}
                 onCancel={() => setActiveTab('list')}
+                userId={session.user.id}
               />
             )}
             {activeTab === 'settings' && (

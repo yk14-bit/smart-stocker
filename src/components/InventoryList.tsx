@@ -8,9 +8,10 @@ interface Props {
   items: InventoryItem[];
   categories: Category[];
   onUpdateItem: (id: string, updates: Partial<InventoryItem>) => void;
+  userId: string;
 }
 
-export function InventoryList({ items, categories, onUpdateItem }: Props) {
+export function InventoryList({ items, categories, onUpdateItem, userId }: Props) {
   const [filter, setFilter] = useState<string>('all');
   const [search, setSearch] = useState<string>('');
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
@@ -115,6 +116,7 @@ export function InventoryList({ items, categories, onUpdateItem }: Props) {
           onClose={() => setSelectedItem(null)}
           initialMessages={selectedItem.aiAnalysis}
           onMessagesChange={(msgs) => onUpdateItem(selectedItem.id, { aiAnalysis: msgs })}
+          userId={userId}
         />
       )}
 

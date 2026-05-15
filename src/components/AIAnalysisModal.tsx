@@ -10,10 +10,11 @@ interface Props {
   autoAnalyze?: boolean;
   initialMessages?: { role: 'ai' | 'user', text: string }[];
   onMessagesChange?: (messages: { role: 'ai' | 'user', text: string }[]) => void;
+  userId: string;
 }
 
-export function AIAnalysisModal({ imageUrl, isOpen, onClose, autoAnalyze = false, initialMessages = [], onMessagesChange }: Props) {
-  const { settings } = useSettings();
+export function AIAnalysisModal({ imageUrl, isOpen, onClose, autoAnalyze = false, initialMessages = [], onMessagesChange, userId }: Props) {
+  const { settings } = useSettings(userId);
   const [messages, setMessages] = useState<{ role: 'ai' | 'user', text: string }[]>(initialMessages);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');

@@ -12,9 +12,11 @@ const DEFAULT_SETTINGS: Settings = {
   geminiModel: 'gemini-2.5-flash',
 };
 
-export function useSettings() {
+export function useSettings(userId: string) {
+  const settingsKey = `smart-stocker-settings-${userId}`;
+
   const [settings, setSettings] = useState<Settings>(() => {
-    const saved = localStorage.getItem('smart-stocker-settings');
+    const saved = localStorage.getItem(settingsKey);
     if (saved) {
       try {
         return JSON.parse(saved);
@@ -30,13 +32,13 @@ export function useSettings() {
   });
 
   useEffect(() => {
-    localStorage.setItem('smart-stocker-settings', JSON.stringify(settings));
+    localStorage.setItem(settingsKey, JSON.stringify(settings));
     if (settings.darkMode) {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
     }
-  }, [settings]);
+  }, [settings, settingsKey]);
 
   const updateSettings = (updates: Partial<Settings>) => {
     setSettings((prev) => ({ ...prev, ...updates }));

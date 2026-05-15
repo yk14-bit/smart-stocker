@@ -7,9 +7,10 @@ interface Props {
   categories: Category[];
   onAdd: (item: Omit<InventoryItem, 'id' | 'createdAt'>) => void;
   onCancel: () => void;
+  userId: string;
 }
 
-export function AddItemForm({ categories, onAdd, onCancel }: Props) {
+export function AddItemForm({ categories, onAdd, onCancel, userId }: Props) {
   const [imageUrl, setImageUrl] = useState<string | undefined>();
   const [name, setName] = useState('');
   const [categoryId, setCategoryId] = useState(categories[0]?.id || '');
@@ -105,7 +106,6 @@ export function AddItemForm({ categories, onAdd, onCancel }: Props) {
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
-              placeholder="例: EMTEK ドアノブ"
             />
           </div>
 
@@ -166,6 +166,7 @@ export function AddItemForm({ categories, onAdd, onCancel }: Props) {
           onClose={() => setShowAIModal(false)}
           initialMessages={aiAnalysis}
           onMessagesChange={setAiAnalysis}
+          userId={userId}
         />
       )}
     </>
