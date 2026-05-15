@@ -91,7 +91,6 @@ export function AddItemForm({ categories, onAdd, onCancel }: Props) {
                   type="file" 
                   className="hidden" 
                   accept="image/*"
-                  capture="environment"
                   onChange={handleImageChange}
                 />
               </label>
