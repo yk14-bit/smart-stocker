@@ -1,7 +1,10 @@
-import { useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useMemo, useRef, useState } from 'react';
 import { Camera, Sparkles, Upload, X } from 'lucide-react';
 import type { Category, InventoryItem } from '../types';
-import { AIAnalysisModal } from './AIAnalysisModal';
+
+const AIAnalysisModal = lazy(() =>
+  import('./AIAnalysisModal').then((module) => ({ default: module.AIAnalysisModal }))
+);
 
 interface Props {
   categories: Category[];
@@ -250,14 +253,16 @@ export function AddItemForm({ categories, onAdd, onCancel, userId }: Props) {
       </form>
 
       {imageUrl && (
-        <AIAnalysisModal
-          imageUrl={imageUrl}
-          isOpen={showAIModal}
-          onClose={() => setShowAIModal(false)}
-          initialMessages={aiAnalysis}
-          onMessagesChange={setAiAnalysis}
-          userId={userId}
-        />
+        <Suspense fallback={null}>
+          <AIAnalysisModal
+            imageUrl={imageUrl}
+            isOpen={showAIModal}
+            onClose={() => setShowAIModal(false)}
+            initialMessages={aiAnalysis}
+            onMessagesChange={setAiAnalysis}
+            userId={userId}
+          />
+        </Suspense>
       )}
     </>
   );

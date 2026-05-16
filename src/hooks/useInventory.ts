@@ -5,19 +5,23 @@ import { supabase } from '../services/supabase';
 
 interface SupabaseItemRow {
   id: string;
-  image_url?: string;
-  name: string;
-  category_id: string;
-  status: InventoryItem['status'];
-  estimated_price?: number;
-  actual_price?: number;
-  purchase_price?: number;
-  shipping_fee?: number;
-  net_profit?: number;
-  description?: string;
-  quantity?: number;
-  ai_analysis?: InventoryItem['aiAnalysis'];
+  image_url?: string | null;
+  name?: string | null;
+  category_id?: string | null;
+  status?: InventoryItem['status'] | null;
+  estimated_price?: number | null;
+  actual_price?: number | null;
+  purchase_price?: number | null;
+  shipping_fee?: number | null;
+  net_profit?: number | null;
+  description?: string | null;
+  quantity?: number | null;
+  ai_analysis?: InventoryItem['aiAnalysis'] | null;
   created_at: number;
+}
+
+function optionalNumber(value: number | null | undefined) {
+  return value === null || value === undefined ? undefined : value;
 }
 
 // Helper functions to map between UI types and Supabase column names
@@ -43,18 +47,18 @@ function mapToSupabaseItem(item: InventoryItem) {
 function mapFromSupabaseItem(row: SupabaseItemRow): InventoryItem {
   return {
     id: row.id,
-    imageUrl: row.image_url,
-    name: row.name,
-    categoryId: row.category_id,
-    status: row.status,
-    estimatedPrice: row.estimated_price,
-    actualPrice: row.actual_price,
-    purchasePrice: row.purchase_price,
-    shippingFee: row.shipping_fee,
-    netProfit: row.net_profit,
-    description: row.description,
-    quantity: row.quantity,
-    aiAnalysis: row.ai_analysis,
+    imageUrl: row.image_url || undefined,
+    name: row.name || '名称未設定',
+    categoryId: row.category_id || '',
+    status: row.status || '在庫あり',
+    estimatedPrice: optionalNumber(row.estimated_price),
+    actualPrice: optionalNumber(row.actual_price),
+    purchasePrice: optionalNumber(row.purchase_price),
+    shippingFee: optionalNumber(row.shipping_fee),
+    netProfit: optionalNumber(row.net_profit),
+    description: row.description || undefined,
+    quantity: row.quantity ?? 1,
+    aiAnalysis: row.ai_analysis || undefined,
     createdAt: row.created_at,
   };
 }
