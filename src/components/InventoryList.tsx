@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { InventoryItem, Category } from '../types';
-import { Package, Search, Tag, Image as ImageIcon, Sparkles, Edit2 } from 'lucide-react';
+import { Package, Search, Tag, Image as ImageIcon, Sparkles, Edit2, TrendingUp } from 'lucide-react';
 import { AIAnalysisModal } from './AIAnalysisModal';
 import { EditItemModal } from './EditItemModal';
 
@@ -116,11 +116,24 @@ export function InventoryList({ items, categories, onUpdateItem, onDeleteItem, u
                     {item.quantity ?? 1}個
                   </span>
                 </div>
-                {item.estimatedPrice && (
-                  <p className="text-primary-600 dark:text-primary-400 font-medium">
-                    ¥{item.estimatedPrice.toLocaleString()}
-                  </p>
-                )}
+                <div className="space-y-1">
+                  {item.actualPrice && (
+                    <p className="text-primary-600 dark:text-primary-400 font-medium">
+                      ¥{item.actualPrice.toLocaleString()}
+                    </p>
+                  )}
+                  {item.netProfit !== undefined && (
+                    <div className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-md ${item.netProfit >= 0 ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300' : 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300'}`}>
+                      <TrendingUp className="w-3 h-3" />
+                      <span>利益 ¥{item.netProfit.toLocaleString()}</span>
+                    </div>
+                  )}
+                  {!item.actualPrice && item.estimatedPrice && (
+                    <p className="text-primary-600 dark:text-primary-400 font-medium">
+                      ¥{item.estimatedPrice.toLocaleString()}
+                    </p>
+                  )}
+                </div>
               </div>
               <button 
                 onClick={(e) => {

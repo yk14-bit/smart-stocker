@@ -1,5 +1,6 @@
 import { Moon, Sun, Key, Save, X, LogOut, User } from 'lucide-react';
 import type { Settings } from '../hooks/useSettings';
+import type { Session } from '@supabase/supabase-js';
 import { useState } from 'react';
 import { supabase } from '../services/supabase';
 
@@ -7,7 +8,7 @@ interface Props {
   settings: Settings;
   onUpdate: (updates: Partial<Settings>) => void;
   onClose: () => void;
-  session: any;
+  session: Session;
 }
 
 export function SettingsPanel({ settings, onUpdate, onClose, session }: Props) {

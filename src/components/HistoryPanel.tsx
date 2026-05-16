@@ -34,7 +34,7 @@ function getLogTone(actionType: ItemLog['actionType']) {
 }
 
 export function HistoryPanel({ userId }: Props) {
-  const { logs, loading } = useLogs(userId);
+  const { logs, loading, loadingMore, hasMore, loadMore } = useLogs(userId);
 
   return (
     <section className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl shadow-sm overflow-hidden">
@@ -43,20 +43,20 @@ export function HistoryPanel({ userId }: Props) {
           <Activity className="w-5 h-5 text-primary-600 dark:text-primary-400" />
           <h2 className="text-base font-semibold text-gray-900 dark:text-white">変更履歴</h2>
         </div>
-        <span className="text-xs font-medium text-gray-400 dark:text-gray-500">最新50件</span>
+        <span className="text-xs font-medium text-gray-400 dark:text-gray-500">50件ずつ表示</span>
       </div>
 
-      <div className="max-h-[640px] overflow-y-auto">
-        {loading ? (
-          <div className="flex items-center justify-center py-10">
-            <div className="w-6 h-6 border-4 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
-          </div>
-        ) : logs.length === 0 ? (
-          <div className="px-4 py-10 text-center">
-            <Clock className="w-10 h-10 mx-auto text-gray-300 dark:text-gray-600 mb-3" />
-            <p className="text-sm text-gray-500 dark:text-gray-400">まだ変更履歴はありません</p>
-          </div>
-        ) : (
+      {loading ? (
+        <div className="flex items-center justify-center py-10">
+          <div className="w-6 h-6 border-4 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      ) : logs.length === 0 ? (
+        <div className="px-4 py-10 text-center">
+          <Clock className="w-10 h-10 mx-auto text-gray-300 dark:text-gray-600 mb-3" />
+          <p className="text-sm text-gray-500 dark:text-gray-400">まだ変更履歴はありません</p>
+        </div>
+      ) : (
+        <>
           <ol className="divide-y divide-gray-100 dark:divide-gray-700">
             {logs.map((log) => {
               const Icon = getLogIcon(log.actionType);
@@ -87,8 +87,21 @@ export function HistoryPanel({ userId }: Props) {
               );
             })}
           </ol>
-        )}
-      </div>
+
+          {hasMore && (
+            <div className="px-4 py-4 border-t border-gray-100 dark:border-gray-700">
+              <button
+                type="button"
+                onClick={loadMore}
+                disabled={loadingMore}
+                className="w-full px-4 py-3 rounded-xl bg-gray-100 dark:bg-gray-700 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+              >
+                {loadingMore ? '読み込み中...' : 'もっと見る'}
+              </button>
+            </div>
+          )}
+        </>
+      )}
     </section>
   );
 }

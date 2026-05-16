@@ -1,27 +1,28 @@
-import { useState, useEffect } from 'react';
-import { X, Sparkles, Loader2, Send } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Loader2, Send, Sparkles, X } from 'lucide-react';
 import { analyzeImage } from '../services/gemini';
 import { useSettings } from '../hooks/useSettings';
+
+type AnalysisMessage = { role: 'ai' | 'user', text: string };
 
 interface Props {
   imageUrl: string;
   isOpen: boolean;
   onClose: () => void;
   autoAnalyze?: boolean;
-  initialMessages?: { role: 'ai' | 'user', text: string }[];
-  onMessagesChange?: (messages: { role: 'ai' | 'user', text: string }[]) => void;
+  initialMessages?: AnalysisMessage[];
+  onMessagesChange?: (messages: AnalysisMessage[]) => void;
   userId: string;
 }
 
 export function AIAnalysisModal({ imageUrl, isOpen, onClose, autoAnalyze = false, initialMessages = [], onMessagesChange, userId }: Props) {
   const { settings } = useSettings(userId);
-  const [messages, setMessages] = useState<{ role: 'ai' | 'user', text: string }[]>(initialMessages);
+  const [messages, setMessages] = useState<AnalysisMessage[]>(initialMessages);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [promptInput, setPromptInput] = useState('');
   const [contextInput, setContextInput] = useState('');
 
-  // Sync messages upwards
   useEffect(() => {
     if (onMessagesChange) {
       onMessagesChange(messages);
@@ -37,37 +38,39 @@ export function AIAnalysisModal({ imageUrl, isOpen, onClose, autoAnalyze = false
 
     setIsLoading(true);
     setError('');
-    
-    // Custom prompt is used for follow-up chat messages
+
     if (customPrompt) {
       setMessages(prev => [...prev, { role: 'user', text: customPrompt }]);
     }
 
-    // Combine initialContext if provided for the first analysis
     let finalPrompt = customPrompt;
     if (!customPrompt && initialContext) {
-      finalPrompt = `補足情報: ${initialContext}\n\n上記の補足情報を踏まえて、画像の製品を分析してください。`;
+      finalPrompt = `補足情報: ${initialContext}\n\n上記の補足情報を踏まえて、画像の商品を出品・査定向けに分析してください。`;
     }
 
     try {
       const result = await analyzeImage(settings.geminiApiKey, settings.geminiModel || 'gemini-2.5-flash', imageUrl, finalPrompt);
       setMessages(prev => [...prev, { role: 'ai', text: result || '' }]);
-    } catch (err: any) {
-      setError(err.message || 'エラーが発生しました');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'エラーが発生しました');
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    if (isOpen) {
-      // Only reset messages if initialMessages wasn't provided, or just sync it
+    if (!isOpen) return;
+
+    queueMicrotask(() => {
       setMessages(initialMessages);
       setError('');
       setContextInput('');
-      if (autoAnalyze && initialMessages.length === 0) {
+    });
+
+    if (autoAnalyze && initialMessages.length === 0) {
+      queueMicrotask(() => {
         runAnalysis();
-      }
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, autoAnalyze]);
@@ -77,19 +80,16 @@ export function AIAnalysisModal({ imageUrl, isOpen, onClose, autoAnalyze = false
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <div className="bg-white dark:bg-gray-900 w-full max-w-2xl rounded-2xl shadow-xl border border-gray-100 dark:border-gray-800 flex flex-col max-h-[90vh]">
-        
-        {/* Header */}
         <div className="flex justify-between items-center p-4 border-b border-gray-100 dark:border-gray-800">
           <div className="flex items-center space-x-2 text-primary-600 dark:text-primary-400">
             <Sparkles className="w-5 h-5" />
-            <h2 className="font-semibold text-gray-900 dark:text-white">AI 画像分析</h2>
+            <h2 className="font-semibold text-gray-900 dark:text-white">AI 出品査定</h2>
           </div>
           <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-full hover:bg-gray-50 dark:hover:bg-gray-800">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Content */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           <div className="flex justify-center mb-6">
             <img src={imageUrl} alt="Analysis Target" className="max-h-48 rounded-xl object-contain shadow-sm border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-black" />
@@ -98,12 +98,12 @@ export function AIAnalysisModal({ imageUrl, isOpen, onClose, autoAnalyze = false
           {!autoAnalyze && messages.length === 0 && !isLoading && !error && (
             <div className="max-w-md mx-auto py-4 space-y-4">
               <p className="text-gray-600 dark:text-gray-400 text-center font-medium">
-                画像の分析を開始します。製品名やブランド、状態など補足情報があれば入力してください。
+                商品写真から、メルカリ・ヤフオク向けの説明文と査定ポイントを作成します。型番やサイズなど補足があれば入力してください。
               </p>
-              
+
               <textarea
                 className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none resize-none"
-                placeholder=""
+                placeholder="例: EMTEKのドアノブ、真鍮風、箱なし、未使用に近い"
                 rows={3}
                 value={contextInput}
                 onChange={(e) => setContextInput(e.target.value)}
@@ -115,7 +115,7 @@ export function AIAnalysisModal({ imageUrl, isOpen, onClose, autoAnalyze = false
                   className="bg-primary-600 text-white font-medium py-3 px-8 rounded-xl hover:bg-primary-700 active:bg-primary-800 transition-colors inline-flex items-center space-x-2 shadow-sm"
                 >
                   <Sparkles className="w-4 h-4" />
-                  <span>AI分析を開始</span>
+                  <span>AI査定を開始</span>
                 </button>
               </div>
             </div>
@@ -131,30 +131,29 @@ export function AIAnalysisModal({ imageUrl, isOpen, onClose, autoAnalyze = false
             {messages.map((msg, idx) => (
               <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[85%] rounded-2xl p-4 shadow-sm border border-transparent ${
-                  msg.role === 'user' 
-                    ? 'bg-primary-600 text-white' 
+                  msg.role === 'user'
+                    ? 'bg-primary-600 text-white'
                     : 'bg-gray-100 dark:bg-gray-800 dark:border-gray-700 text-gray-900 dark:text-gray-100'
                 }`}>
                   <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed">{msg.text}</pre>
                 </div>
               </div>
             ))}
-            
+
             {isLoading && (
               <div className="flex justify-start">
                 <div className="bg-gray-100 dark:bg-gray-800 dark:border-gray-700 border border-transparent rounded-2xl p-4 flex items-center space-x-3 shadow-sm">
                   <Loader2 className="w-5 h-5 text-primary-600 dark:text-primary-400 animate-spin" />
-                  <span className="text-sm text-gray-600 dark:text-gray-300 font-medium">AIが分析中...</span>
+                  <span className="text-sm text-gray-600 dark:text-gray-300 font-medium">AIが査定中...</span>
                 </div>
               </div>
             )}
           </div>
         </div>
 
-        {/* Input Area */}
         {messages.length > 0 && (
           <div className="p-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 rounded-b-2xl">
-            <form 
+            <form
               onSubmit={(e) => {
                 e.preventDefault();
                 if (promptInput.trim() && !isLoading) {
@@ -168,7 +167,7 @@ export function AIAnalysisModal({ imageUrl, isOpen, onClose, autoAnalyze = false
                 type="text"
                 value={promptInput}
                 onChange={(e) => setPromptInput(e.target.value)}
-                placeholder="AIに追加の質問や指示を入力..."
+                placeholder="AIに追加の質問や修正指示を入力..."
                 className="flex-1 px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none shadow-sm"
               />
               <button

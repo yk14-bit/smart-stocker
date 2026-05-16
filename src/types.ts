@@ -23,6 +23,9 @@ export interface InventoryItem {
   status: ItemStatus;
   estimatedPrice?: number;
   actualPrice?: number;
+  purchasePrice?: number;
+  shippingFee?: number;
+  netProfit?: number;
   description?: string;
   createdAt: number;
   aiAnalysis?: { role: 'ai' | 'user'; text: string }[];

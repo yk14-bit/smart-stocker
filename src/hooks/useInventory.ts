@@ -11,6 +11,9 @@ interface SupabaseItemRow {
   status: InventoryItem['status'];
   estimated_price?: number;
   actual_price?: number;
+  purchase_price?: number;
+  shipping_fee?: number;
+  net_profit?: number;
   description?: string;
   quantity?: number;
   ai_analysis?: InventoryItem['aiAnalysis'];
@@ -27,6 +30,9 @@ function mapToSupabaseItem(item: InventoryItem) {
     status: item.status,
     estimated_price: item.estimatedPrice,
     actual_price: item.actualPrice,
+    purchase_price: item.purchasePrice,
+    shipping_fee: item.shippingFee,
+    net_profit: item.netProfit,
     description: item.description,
     quantity: item.quantity ?? 1,
     ai_analysis: item.aiAnalysis || [],
@@ -43,6 +49,9 @@ function mapFromSupabaseItem(row: SupabaseItemRow): InventoryItem {
     status: row.status,
     estimatedPrice: row.estimated_price,
     actualPrice: row.actual_price,
+    purchasePrice: row.purchase_price,
+    shippingFee: row.shipping_fee,
+    netProfit: row.net_profit,
     description: row.description,
     quantity: row.quantity,
     aiAnalysis: row.ai_analysis,
@@ -90,6 +99,30 @@ function buildUpdateDetails(before: InventoryItem, updates: Partial<InventoryIte
     const beforePrice = before.estimatedPrice ? `${before.estimatedPrice.toLocaleString()}円` : '未設定';
     const afterPrice = updates.estimatedPrice ? `${updates.estimatedPrice.toLocaleString()}円` : '未設定';
     details.push(`推定販売相場を ${beforePrice} から ${afterPrice} に変更しました`);
+  }
+
+  if (updates.actualPrice !== undefined && updates.actualPrice !== before.actualPrice) {
+    const beforePrice = before.actualPrice ? `${before.actualPrice.toLocaleString()}円` : '未設定';
+    const afterPrice = updates.actualPrice ? `${updates.actualPrice.toLocaleString()}円` : '未設定';
+    details.push(`販売予定価格を ${beforePrice} から ${afterPrice} に変更しました`);
+  }
+
+  if (updates.purchasePrice !== undefined && updates.purchasePrice !== before.purchasePrice) {
+    const beforePrice = before.purchasePrice ? `${before.purchasePrice.toLocaleString()}円` : '未設定';
+    const afterPrice = updates.purchasePrice ? `${updates.purchasePrice.toLocaleString()}円` : '未設定';
+    details.push(`仕入原価を ${beforePrice} から ${afterPrice} に変更しました`);
+  }
+
+  if (updates.shippingFee !== undefined && updates.shippingFee !== before.shippingFee) {
+    const beforePrice = before.shippingFee ? `${before.shippingFee.toLocaleString()}円` : '未設定';
+    const afterPrice = updates.shippingFee ? `${updates.shippingFee.toLocaleString()}円` : '未設定';
+    details.push(`送料見込みを ${beforePrice} から ${afterPrice} に変更しました`);
+  }
+
+  if (updates.netProfit !== undefined && updates.netProfit !== before.netProfit) {
+    const beforePrice = before.netProfit !== undefined ? `${before.netProfit.toLocaleString()}円` : '未設定';
+    const afterPrice = updates.netProfit !== undefined ? `${updates.netProfit.toLocaleString()}円` : '未設定';
+    details.push(`純利益見込みを ${beforePrice} から ${afterPrice} に更新しました`);
   }
 
   if (updates.categoryId !== undefined && updates.categoryId !== before.categoryId) {
@@ -233,6 +266,9 @@ export function useInventory(userId: string) {
     if (updates.status !== undefined) payload.status = updates.status;
     if (updates.estimatedPrice !== undefined) payload.estimated_price = updates.estimatedPrice;
     if (updates.actualPrice !== undefined) payload.actual_price = updates.actualPrice;
+    if (updates.purchasePrice !== undefined) payload.purchase_price = updates.purchasePrice;
+    if (updates.shippingFee !== undefined) payload.shipping_fee = updates.shippingFee;
+    if (updates.netProfit !== undefined) payload.net_profit = updates.netProfit;
     if (updates.description !== undefined) payload.description = updates.description;
     if (updates.quantity !== undefined) payload.quantity = updates.quantity;
     if (updates.aiAnalysis !== undefined) payload.ai_analysis = updates.aiAnalysis;

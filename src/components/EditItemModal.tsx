@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { X, Save, Camera, Trash2 } from 'lucide-react';
-import type { InventoryItem, Category } from '../types';
+import { useMemo, useState } from 'react';
+import { Camera, Save, Trash2, X } from 'lucide-react';
+import type { Category, InventoryItem } from '../types';
 
 interface Props {
   item: InventoryItem;
@@ -11,12 +11,38 @@ interface Props {
   onDelete: (id: string) => void;
 }
 
+function parseOptionalNumber(value: string) {
+  if (value.trim() === '') return undefined;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function calculateProfit(actualPrice: number, purchasePrice = 0, shippingFee = 0) {
+  const sellingFee = Math.floor(actualPrice * 0.1);
+  return {
+    sellingFee,
+    netProfit: actualPrice - purchasePrice - shippingFee - sellingFee,
+  };
+}
+
 export function EditItemModal({ item, categories, isOpen, onClose, onSave, onDelete }: Props) {
   const [name, setName] = useState(item.name);
   const [categoryId, setCategoryId] = useState(item.categoryId);
   const [estimatedPrice, setEstimatedPrice] = useState(item.estimatedPrice?.toString() || '');
+  const [actualPrice, setActualPrice] = useState(item.actualPrice?.toString() || '');
+  const [purchasePrice, setPurchasePrice] = useState(item.purchasePrice?.toString() || '');
+  const [shippingFee, setShippingFee] = useState(item.shippingFee?.toString() || '');
   const [quantity, setQuantity] = useState(item.quantity?.toString() || '1');
   const [imageUrl, setImageUrl] = useState<string | undefined>(item.imageUrl);
+
+  const profitPreview = useMemo(() => {
+    const sellingPrice = parseOptionalNumber(actualPrice) ?? 0;
+    return calculateProfit(
+      sellingPrice,
+      parseOptionalNumber(purchasePrice) ?? 0,
+      parseOptionalNumber(shippingFee) ?? 0
+    );
+  }, [actualPrice, purchasePrice, shippingFee]);
 
   if (!isOpen) return null;
 
@@ -34,13 +60,24 @@ export function EditItemModal({ item, categories, isOpen, onClose, onSave, onDel
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const parsedQuantity = Number(quantity);
+    const parsedActualPrice = parseOptionalNumber(actualPrice);
+    const parsedPurchasePrice = parseOptionalNumber(purchasePrice);
+    const parsedShippingFee = parseOptionalNumber(shippingFee);
+    const netProfit = parsedActualPrice !== undefined
+      ? calculateProfit(parsedActualPrice, parsedPurchasePrice ?? 0, parsedShippingFee ?? 0).netProfit
+      : undefined;
+
     onSave(item.id, {
       name,
       categoryId,
       imageUrl,
       status: parsedQuantity === 0 ? '在庫なし' : '在庫あり',
       quantity: parsedQuantity,
-      estimatedPrice: estimatedPrice ? parseInt(estimatedPrice, 10) : undefined,
+      estimatedPrice: parseOptionalNumber(estimatedPrice),
+      actualPrice: parsedActualPrice,
+      purchasePrice: parsedPurchasePrice,
+      shippingFee: parsedShippingFee,
+      netProfit,
     });
     onClose();
   };
@@ -54,8 +91,7 @@ export function EditItemModal({ item, categories, isOpen, onClose, onSave, onDel
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-white dark:bg-gray-800 w-full max-w-md rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 flex flex-col max-h-[90vh] overflow-y-auto">
-        
+      <div className="bg-white dark:bg-gray-800 w-full max-w-2xl rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 flex flex-col max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center p-4 border-b border-gray-100 dark:border-gray-700">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">アイテムの編集</h2>
           <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-full hover:bg-gray-50 dark:hover:bg-gray-700">
@@ -82,9 +118,9 @@ export function EditItemModal({ item, categories, isOpen, onClose, onSave, onDel
                   <Camera className="w-8 h-8 mb-2 text-gray-400 dark:text-gray-500" />
                   <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">写真を変更</p>
                 </div>
-                <input 
-                  type="file" 
-                  className="hidden" 
+                <input
+                  type="file"
+                  className="hidden"
                   accept="image/*"
                   onChange={handleImageChange}
                 />
@@ -116,8 +152,8 @@ export function EditItemModal({ item, categories, isOpen, onClose, onSave, onDel
             </select>
           </div>
 
-          <div className="flex space-x-4">
-            <div className="flex-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">在庫数</label>
               <input
                 type="number"
@@ -128,14 +164,63 @@ export function EditItemModal({ item, categories, isOpen, onClose, onSave, onDel
               />
             </div>
 
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">推定販売相場 (¥)</label>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">相場メモ（円）</label>
               <input
                 type="number"
+                min="0"
                 value={estimatedPrice}
                 onChange={(e) => setEstimatedPrice(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
               />
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 p-4 space-y-4">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">利益シミュレーター</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">販売予定価格</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={actualPrice}
+                  onChange={(e) => setActualPrice(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">仕入原価</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={purchasePrice}
+                  onChange={(e) => setPurchasePrice(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">送料見込み</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={shippingFee}
+                  onChange={(e) => setShippingFee(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 px-4 py-3">
+                <p className="text-xs text-gray-500 dark:text-gray-400">販売手数料 10%</p>
+                <p className="text-lg font-semibold text-gray-900 dark:text-white">¥{profitPreview.sellingFee.toLocaleString()}</p>
+              </div>
+              <div className={`rounded-xl border px-4 py-3 ${profitPreview.netProfit >= 0 ? 'bg-emerald-50 border-emerald-100 dark:bg-emerald-950/30 dark:border-emerald-900/40' : 'bg-red-50 border-red-100 dark:bg-red-950/30 dark:border-red-900/40'}`}>
+                <p className="text-xs text-gray-500 dark:text-gray-400">純利益見込み</p>
+                <p className={`text-lg font-semibold ${profitPreview.netProfit >= 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-700 dark:text-red-300'}`}>
+                  ¥{profitPreview.netProfit.toLocaleString()}
+                </p>
+              </div>
             </div>
           </div>
 

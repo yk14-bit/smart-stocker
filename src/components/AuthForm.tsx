@@ -1,6 +1,6 @@
 import { useState } from 'react';
+import { AlertCircle, Lock, Mail, Package } from 'lucide-react';
 import { supabase } from '../services/supabase';
-import { Package, Lock, Mail, AlertCircle } from 'lucide-react';
 
 export function AuthForm() {
   const [isLogin, setIsLogin] = useState(true);
@@ -29,10 +29,10 @@ export function AuthForm() {
           password,
         });
         if (error) throw error;
-        setMessage('登録完了しました。確認メールをお送りした場合、リンクをクリックしてログインしてください。');
+        setMessage('登録が完了しました。確認メールが届いた場合はリンクを開いてログインしてください。');
       }
-    } catch (err: any) {
-      setError(err.message || '認証に失敗しました');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '認証に失敗しました');
     } finally {
       setLoading(false);
     }
