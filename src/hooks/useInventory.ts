@@ -3,6 +3,20 @@ import type { InventoryItem, Category } from '../types';
 import { DEFAULT_CATEGORIES } from '../types';
 import { supabase } from '../services/supabase';
 
+interface SupabaseItemRow {
+  id: string;
+  image_url?: string;
+  name: string;
+  category_id: string;
+  status: InventoryItem['status'];
+  estimated_price?: number;
+  actual_price?: number;
+  description?: string;
+  quantity?: number;
+  ai_analysis?: InventoryItem['aiAnalysis'];
+  created_at: number;
+}
+
 // Helper functions to map between UI types and Supabase column names
 function mapToSupabaseItem(item: InventoryItem) {
   return {
@@ -20,7 +34,7 @@ function mapToSupabaseItem(item: InventoryItem) {
   };
 }
 
-function mapFromSupabaseItem(row: any): InventoryItem {
+function mapFromSupabaseItem(row: SupabaseItemRow): InventoryItem {
   return {
     id: row.id,
     imageUrl: row.image_url,
@@ -36,6 +50,63 @@ function mapFromSupabaseItem(row: any): InventoryItem {
   };
 }
 
+async function insertItemLog(
+  userId: string,
+  item: Pick<InventoryItem, 'id' | 'name'>,
+  actionType: 'CREATE' | 'UPDATE' | 'DELETE',
+  details: string
+) {
+  const { error } = await supabase.from('item_logs').insert([
+    {
+      user_id: userId,
+      item_id: item.id,
+      item_name: item.name,
+      action_type: actionType,
+      details,
+    },
+  ]);
+
+  if (error) {
+    console.error('Error inserting item log:', error);
+  }
+}
+
+function buildUpdateDetails(before: InventoryItem, updates: Partial<InventoryItem>) {
+  const details: string[] = [];
+
+  if (updates.name !== undefined && updates.name !== before.name) {
+    details.push(`商品名を「${before.name}」から「${updates.name}」に変更しました`);
+  }
+
+  if (updates.quantity !== undefined && updates.quantity !== (before.quantity ?? 1)) {
+    details.push(`在庫数を ${(before.quantity ?? 1).toLocaleString()}個 から ${updates.quantity.toLocaleString()}個 に変更しました`);
+  }
+
+  if (updates.status !== undefined && updates.status !== before.status) {
+    details.push(`状態を「${before.status}」から「${updates.status}」に変更しました`);
+  }
+
+  if (updates.estimatedPrice !== undefined && updates.estimatedPrice !== before.estimatedPrice) {
+    const beforePrice = before.estimatedPrice ? `${before.estimatedPrice.toLocaleString()}円` : '未設定';
+    const afterPrice = updates.estimatedPrice ? `${updates.estimatedPrice.toLocaleString()}円` : '未設定';
+    details.push(`推定販売相場を ${beforePrice} から ${afterPrice} に変更しました`);
+  }
+
+  if (updates.categoryId !== undefined && updates.categoryId !== before.categoryId) {
+    details.push('カテゴリを変更しました');
+  }
+
+  if (updates.imageUrl !== undefined && updates.imageUrl !== before.imageUrl) {
+    details.push(updates.imageUrl ? '商品画像を更新しました' : '商品画像を削除しました');
+  }
+
+  if (updates.description !== undefined && updates.description !== before.description) {
+    details.push('説明文を更新しました');
+  }
+
+  return details.join(' / ');
+}
+
 export function useInventory(userId: string) {
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -45,7 +116,7 @@ export function useInventory(userId: string) {
     async function initData() {
       try {
         // Fetch categories
-        let { data: catData, error: catError } = await supabase.from('categories').select('*');
+        const { data: catData, error: catError } = await supabase.from('categories').select('*');
         if (catError) throw catError;
 
         let activeCategories = catData || [];
@@ -118,7 +189,7 @@ export function useInventory(userId: string) {
     }
 
     initData();
-  }, []);
+  }, [userId]);
 
   const addItem = async (item: Omit<InventoryItem, 'id' | 'createdAt'>) => {
     const newItem: InventoryItem = {
@@ -135,17 +206,27 @@ export function useInventory(userId: string) {
     if (error) {
       console.error('Error adding item to Supabase:', error);
       // Revert on error if needed
+      return;
     }
+
+    await insertItemLog(
+      userId,
+      newItem,
+      'CREATE',
+      `「${newItem.name}」を新規登録しました（初期在庫: ${(newItem.quantity ?? 1).toLocaleString()}個）`
+    );
   };
 
   const updateItem = async (id: string, updates: Partial<InventoryItem>) => {
+    const previousItem = items.find((item) => item.id === id);
+
     // Optimistic UI update
     setItems((prev) =>
       prev.map((item) => (item.id === id ? { ...item, ...updates } : item))
     );
 
     // Filter out undefined keys for Supabase update payload
-    const payload: any = {};
+    const payload: Record<string, unknown> = {};
     if (updates.name !== undefined) payload.name = updates.name;
     if (updates.imageUrl !== undefined) payload.image_url = updates.imageUrl;
     if (updates.categoryId !== undefined) payload.category_id = updates.categoryId;
@@ -158,11 +239,28 @@ export function useInventory(userId: string) {
 
     if (Object.keys(payload).length > 0) {
       const { error } = await supabase.from('items').update(payload).eq('id', id);
-      if (error) console.error('Error updating item in Supabase:', error);
+      if (error) {
+        console.error('Error updating item in Supabase:', error);
+        return;
+      }
+
+      if (previousItem) {
+        const details = buildUpdateDetails(previousItem, updates);
+        if (details) {
+          await insertItemLog(
+            userId,
+            { id: previousItem.id, name: updates.name ?? previousItem.name },
+            'UPDATE',
+            details
+          );
+        }
+      }
     }
   };
 
   const deleteItem = async (id: string) => {
+    const previousItem = items.find((item) => item.id === id);
+
     // Optimistic UI update
     setItems((prev) => prev.filter((item) => item.id !== id));
 
@@ -170,6 +268,16 @@ export function useInventory(userId: string) {
     const { error } = await supabase.from('items').delete().eq('id', id);
     if (error) {
       console.error('Error deleting item from Supabase:', error);
+      return;
+    }
+
+    if (previousItem) {
+      await insertItemLog(
+        userId,
+        previousItem,
+        'DELETE',
+        `「${previousItem.name}」を削除しました（削除時の在庫: ${(previousItem.quantity ?? 1).toLocaleString()}個）`
+      );
     }
   };
 

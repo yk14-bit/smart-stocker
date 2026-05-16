@@ -5,6 +5,16 @@ export interface Category {
   name: string;
 }
 
+export interface ItemLog {
+  id: string;
+  userId: string;
+  itemId: string;
+  itemName: string;
+  actionType: 'CREATE' | 'UPDATE' | 'DELETE';
+  details: string;
+  createdAt: string;
+}
+
 export interface InventoryItem {
   id: string;
   imageUrl?: string;
